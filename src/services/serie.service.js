@@ -12,8 +12,13 @@ class SeriesService {
   }
 
   async showSerie(serieId) {
-    return serieSchema.findById({ _id: serieId });
+    return serieSchema.findById({ _id: serieId }).then((serieFind) => {
+      if (!serieFind) throw Boom.notFound("No se encontro la serie");
+      return serieFind;
+    });
   }
+
+
   async editSerie(
     serieId,
     serie,
@@ -21,35 +26,42 @@ class SeriesService {
     original_lenguague,
     features_seasons
   ) {
+    return serieSchema.findById({ _id: serieId }).then((serieFind) => {
+      if (!serieFind) throw Boom.notFound("No se encontro la serie");
       return serieSchema.updateOne(
-        { _id: serieId },
-        { serie, number_seasons, original_lenguague, features_seasons}
+        { serieId },
+        { serie, number_seasons, original_lenguague, features_seasons }
       );
+    });
     
   }
 
   async removeSerie(serieId) {
-    const serieRemove = serieSchema.findById({ _id: serieId });
-    return serieSchema.deleteOne(serieRemove);
+    return serieSchema.findById({ _id: serieId }).then((serieFind) => {
+      if (!serieFind) throw Boom.notFound("No se encontro la serie");
+      return serieSchema.deleteOne(serieFind);
+    });
   }
 
   async referenceActor(actor){
     const series = await serieSchema.find();
-    const ciclo = [];
+    const matchedSeries = series.filter((serie) =>
+      serie.features_seasons.cast.includes(actor)
+    );
 
-    series.forEach((serie,i) => {
-      if(serie.features_seasons.cast.includes(actor)){
-        ciclo[i] = serie
-      }
-    });
-
-    return ciclo;
+    if (matchedSeries.length === 0)
+      throw Boom.notFound("No se encuentra el actor");
+    return matchedSeries;
 
   }
 
 
-  async referenceDate(date) {
-    return serieSchema.find({ 'features_seasons.premier_date': date })
+  async SerieDate(premier_date) {
+    const date = await serieSchema
+      .find({ "features_seasons.premier_date": premier_date })
+      if (date.length === 0) throw Boom.notFound("No se encontro la serie")
+      return date
+
   }
 
 }
